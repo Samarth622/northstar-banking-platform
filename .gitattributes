@@ -1,0 +1,51 @@
+# =====================================================================
+# Northstar Banking Platform - .gitattributes
+#
+# Why this file exists: Windows uses CRLF line endings, Linux/macOS use LF.
+# Without explicit rules, the same file can flip line endings between
+# machines. That creates fake "whole file changed" diffs and breaks shell
+# scripts such as mvnw when they run in Linux containers or CI.
+#
+# These rules are committed with the repository, so they apply on every
+# machine and take precedence over each developer's core.autocrlf setting.
+# Later lines override earlier lines for the same file.
+#
+# Show line endings in index and working tree:  git ls-files --eol
+# Show attributes applied to a file:            git check-attr -a <path>
+# =====================================================================
+
+
+# Default: Git detects text files and stores and checks them out with LF.
+* text=auto eol=lf
+
+
+# Unix shell scripts MUST use LF, otherwise they fail with errors such as
+# "bad interpreter" or "sh\r: No such file or directory".
+mvnw        text eol=lf
+*.sh        text eol=lf
+
+
+# Windows scripts should use CRLF; cmd.exe can misparse LF-only batch files.
+*.cmd       text eol=crlf
+*.bat       text eol=crlf
+*.ps1       text eol=crlf
+
+
+# Better diff hunk headers (shows the enclosing method / heading).
+*.java      text diff=java
+*.md        text diff=markdown
+
+
+# Binary files: never convert line endings, never attempt text diffs.
+*.jar       binary
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.pdf       binary
+*.zip       binary
+*.gz        binary
+*.ttf       binary
+*.woff      binary
+*.woff2     binary
