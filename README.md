@@ -77,6 +77,7 @@ northstar-banking-platform/
 ├── README.md
 ├── .gitignore
 ├── .gitattributes
+├── .github/            Copilot review agent, skill and push workflow
 └── docs/
     ├── adr/            Architecture decision records
     ├── learning-log/   Concept notes, one file per assignment
@@ -90,6 +91,7 @@ Application code, build files and Docker configuration are added as each phase b
 - [Architecture decision records](docs/adr/)
 - [Learning log](docs/learning-log/)
 - [Project blueprint](docs/blueprint/)
+- [Automated code review setup](docs/deep-code-review-setup.md)
 
 ## Development workflow
 

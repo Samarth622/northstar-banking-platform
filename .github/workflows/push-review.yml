@@ -1,0 +1,123 @@
+name: Push review
+
+on:
+  push:
+    branches:
+      - "**"
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: [self-hosted, windows, x64]
+    timeout-minutes: 30
+    steps:
+      - name: Check out pushed commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Maven verification
+        id: maven
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          if (Test-Path .\pom.xml) {
+            if (-not (Test-Path .\mvnw.cmd)) {
+              throw "pom.xml exists, but the committed Maven Wrapper (mvnw.cmd) is missing."
+            }
+            .\mvnw.cmd -B verify
+            if ($LASTEXITCODE -ne 0) {
+              exit $LASTEXITCODE
+            }
+            "## Maven verification`n`n`Passed: ``mvnw.cmd -B verify``." |
+              Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          } else {
+            "## Maven verification`n`nSkipped: this repository does not have a pom.xml yet." |
+              Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          }
+
+      - name: Review push with local Ollama
+        id: ollama
+        continue-on-error: true
+        shell: pwsh
+        env:
+          OLLAMA_MODEL: ${{ vars.OLLAMA_MODEL }}
+          OLLAMA_HOST: ${{ vars.OLLAMA_HOST }}
+        run: .\.github\scripts\review-push.ps1
+
+      - name: Publish review to associated pull request
+        if: always() && steps.ollama.outcome != 'skipped'
+        uses: actions/github-script@v7
+        env:
+          REVIEW_PATH: ${{ runner.temp }}\northstar-ollama-review.md
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- northstar-local-ollama-review -->';
+            const reviewPath = process.env.REVIEW_PATH;
+            if (!fs.existsSync(reviewPath)) {
+              core.warning('No review report was produced; check the Ollama workflow step.');
+              return;
+            }
+
+            const review = fs.readFileSync(reviewPath, 'utf8');
+            const { owner, repo } = context.repo;
+            const { data: pullRequests } =
+              await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner,
+                repo,
+                commit_sha: context.sha
+              });
+            const pullRequest = pullRequests.find(item => item.state === 'open');
+            if (!pullRequest) {
+              core.info('No open pull request is associated with this pushed commit.');
+              return;
+            }
+
+            const body = `${marker}\n## Local Ollama code review\n\n${review}\n\n_Updated for commit ${context.sha.slice(0, 7)}._`;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: pullRequest.number,
+              per_page: 100
+            });
+            const existing = comments.find(comment => comment.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: pullRequest.number,
+                body
+              });
+            }
+
+      - name: Set final check status
+        if: always()
+        shell: pwsh
+        env:
+          MAVEN_OUTCOME: ${{ steps.maven.outcome }}
+          OLLAMA_OUTCOME: ${{ steps.ollama.outcome }}
+        run: |
+          if ($env:MAVEN_OUTCOME -eq "failure" -or $env:OLLAMA_OUTCOME -eq "failure") {
+            throw "One or more review checks failed. See the preceding workflow steps and summary."
+          }
+
+      - name: Remove temporary review report
+        if: always()
+        shell: pwsh
+        run: |
+          $report = Join-Path $env:RUNNER_TEMP "northstar-ollama-review.md"
+          if (Test-Path $report) {
+            Remove-Item -LiteralPath $report -Force
+          }
