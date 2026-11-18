@@ -75,9 +75,10 @@ It will document how to:
 ```
 northstar-banking-platform/
 ├── README.md
+├── review.cmd          On-demand local code review
 ├── .gitignore
 ├── .gitattributes
-├── .github/            Copilot review agent, skill and push workflow
+├── .github/            Copilot review agent, skill and local PowerShell script
 └── docs/
     ├── adr/            Architecture decision records
     ├── learning-log/   Concept notes, one file per assignment
@@ -91,7 +92,7 @@ Application code, build files and Docker configuration are added as each phase b
 - [Architecture decision records](docs/adr/)
 - [Learning log](docs/learning-log/)
 - [Project blueprint](docs/blueprint/)
-- [Automated code review setup](docs/deep-code-review-setup.md)
+- [On-demand local code review](docs/deep-code-review-setup.md)
 
 ## Development workflow
 

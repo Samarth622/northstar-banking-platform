@@ -1,24 +1,37 @@
-# Automated code review
+# Run a local code review
 
-The repository includes a read-only [Deep Code Review Copilot agent](../.github/agents/deep-code-review.agent.md), its reusable [review skill](../.github/skills/deep-code-review/SKILL.md), and a GitHub Actions workflow that runs on every branch push.
+The repository includes a read-only [Deep Code Review Copilot agent](../.github/agents/deep-code-review.agent.md), its reusable [review skill](../.github/skills/deep-code-review/SKILL.md), and a PowerShell script that reviews the repository with Ollama on your machine.
 
-## What runs
+There is no GitHub Actions workflow for this review. Pushes do not start an automatic check, and no GitHub self-hosted runner is required.
 
-- On a Windows x64 self-hosted GitHub Actions runner, the workflow runs `mvnw.cmd -B verify` when `pom.xml` exists. Until the Maven project and wrapper are added, this check is reported as skipped.
-- The workflow sends the pushed diff to the Ollama service on the runner machine. It publishes the review in the Actions run summary and updates a single comment if the pushed commit belongs to an open pull request.
-- The final check fails if Maven verification or the Ollama review fails. A truncated diff is clearly identified in the review report.
+When a Maven project is present, the script also runs `mvnw.cmd -B verify` before the AI review. A failed Maven verification is reported in the review and causes the script to exit with an error after saving the report.
 
-The review is advisory, not a guarantee that every defect will be found. Review the findings and run the project's checks before merging.
+## Run from VS Code
 
-## Configure a self-hosted runner
+1. Start Ollama on your computer and install a model if needed:
 
-1. In GitHub, open the repository's **Settings → Actions → Runners → New self-hosted runner** and follow GitHub's Windows instructions. Register it for this repository and keep the default `self-hosted`, `windows`, and `x64` labels.
-2. Keep the runner machine online while pushes are expected. Install the JDK version required by the project's `pom.xml` when it is added. Do not expose the runner to untrusted contributors: Maven verification executes build plugins and tests from the checked-out repository.
-3. Install Ollama on the runner machine, start its local service, and pull the model you want to use. Confirm `http://localhost:11434/api/tags` is reachable from the runner's Windows account.
-4. In **Settings → Secrets and variables → Actions → Variables**, add:
-   - `OLLAMA_MODEL`: the exact installed model name returned by `/api/tags` (for example, `qwen2.5-coder:14b` only if you have installed it).
-   - `OLLAMA_HOST` (optional): the local Ollama API URL; defaults to `http://localhost:11434`.
-5. Ensure Actions' repository token can read contents and write issue and pull-request comments. The workflow declares these minimum permissions; organization policy may restrict them.
-6. Push a commit and inspect **Actions → Push review**. Check both the Actions summary and, if applicable, the pull-request comment.
+   ```powershell
+   ollama list
+   ollama pull fredrezones55/qwen3.5-opus:4b
+   ```
 
-The review diff is sent only to the configured Ollama endpoint on the self-hosted runner; it is not sent by this workflow to a hosted AI API. The runner still downloads the referenced GitHub Actions and must communicate with GitHub. Protect the runner and repository, and do not use this workflow for pushes from untrusted contributors or public-fork code.
+2. Open the repository in VS Code and open a PowerShell integrated terminal at the repository root.
+3. Run:
+
+   ```powershell
+   .\review.cmd
+   ```
+
+   This short command runs the review with `fredrezones55/qwen3.5-opus:4b`. The launcher uses a temporary execution-policy override for that PowerShell process only; it does not change your saved system policy. To choose another installed model, invoke the script directly:
+
+   ```powershell
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\.github\scripts\review-codebase.ps1" -Model "your-installed-model"
+   ```
+
+   Optional: override the local Ollama API address with `-OllamaHost "http://localhost:11434"`.
+
+4. Read the report saved under the repository root's `logs` folder. Its path is printed as soon as the review starts and updated after each batch, so a failed run still leaves a partial report with its status and error. Maven verification results, when run, are included. Git ignores `logs/`, so reports do not appear in Source Control and are not committed; open the folder in VS Code Explorer to view them.
+
+The script sends reviewable source, configuration, and documentation files to the Ollama endpoint on your machine in bounded batches; it does not send code to a hosted AI service. It excludes Git-ignored files, generated/build directories, `.env*` files, and binary files; files larger than 250 KB or with an exceptionally long line are listed as not reviewed. Batch-by-batch review can miss defects that depend on relationships between files in separate batches. The report lists the number of files and batches so you can understand the review scope.
+
+The review is advisory, not a guarantee that every defect will be found. Run the project's tests and review the findings before merging.
