@@ -2,7 +2,6 @@
 
 Backend platform for **Northstar Retail Bank (NRB)**, a fictional retail bank, built as a learn-before-build Java and Spring Boot capstone project.
 
-> **Educational simulator — synthetic data only.** This is not a real bank and not a production banking system. See the [disclaimer](#disclaimer).
 
 ## What this project is
 
@@ -40,7 +39,7 @@ A phase is complete only when its exit gate passes, not when the code compiles.
 
 ## Technology
 
-Exact versions are recorded in [ADR-000](docs/adr/ADR-000-baseline-versions.md) and, once the application is generated, in `pom.xml`, the Maven Wrapper and `docker-compose.yml`. This README deliberately does not repeat version numbers, so it cannot drift out of date.
+Exact versions are recorded in [ADR-000](docs/adr/ADR-000-baseline-versions.md), `pom.xml`, the Maven Wrapper and (later) `docker-compose.yml`. This README deliberately does not repeat version numbers, so it cannot drift out of date.
 
 - Java, Spring Boot, Spring Security, Spring Data JPA / Hibernate, Bean Validation
 - PostgreSQL (via Docker Compose) with Flyway migrations
@@ -60,45 +59,60 @@ You do not need to install Maven or PostgreSQL locally: the project ships with t
 
 ## Getting started
 
-_Not runnable yet. This section will be completed at the end of Phase 0._
+```powershell
+# Clone the repository
+git clone https://github.com/Samarth622/northstar-banking-platform.git
+cd northstar-banking-platform
 
-It will document how to:
+# Build and run all tests
+.\mvnw.cmd clean verify
 
-1. clone the repository;
-2. create local environment variables from `.env.example`;
-3. start PostgreSQL with Docker Compose;
-4. build and test with the Maven Wrapper (`mvnw` / `mvnw.cmd`);
-5. run the application and check its health endpoint.
+# Run the application (http://localhost:8080)
+.\mvnw.cmd spring-boot:run
+```
+
+On macOS/Linux use `./mvnw` instead of `.\mvnw.cmd`. Stop the application with Ctrl+C.
+
+There are no endpoints yet, so `http://localhost:8080` returns a 404 page; that confirms the server is running. PostgreSQL via Docker Compose and a health endpoint are added in later steps.
 
 ## Repository layout
 
 ```
 northstar-banking-platform/
 ├── README.md
+├── pom.xml             Maven build definition
+├── mvnw, mvnw.cmd      Maven Wrapper scripts (Linux/macOS and Windows)
+├── .mvn/wrapper/       Maven Wrapper configuration
 ├── review.cmd          On-demand local code review
 ├── .gitignore
 ├── .gitattributes
 ├── .github/            Copilot review agent, skill and local PowerShell script
+├── src/
+│   ├── main/
+│   │   ├── java/com/northstar/bank/   Application code
+│   │   └── resources/                 Configuration
+│   └── test/
+│       └── java/com/northstar/bank/   Tests
 └── docs/
     ├── adr/            Architecture decision records
     ├── learning-log/   Concept notes, one file per assignment
     └── blueprint/      Project blueprint (design reference)
 ```
 
-Application code, build files and Docker configuration are added as each phase begins.
+Database, Docker and further modules are added as each phase begins.
 
 ## Documentation
 
-- [Architecture decision records](docs/adr/)
-- [Learning log](docs/learning-log/)
-- [Project blueprint](docs/blueprint/)
+- [Architecture decision records](docs/adr)
+- [Learning log](docs/learning-log)
+- [Project blueprint](docs/blueprint)
 - [On-demand local code review](docs/deep-code-review-setup.md)
 
 ## Development workflow
 
 - **Trunk-based development:** `main` is always releasable.
-- One short-lived branch per ticket, named by epic, e.g. `feature/e01-security-filter-chain`.
-- Every change reaches `main` through a pull request reviewed against the blueprint's PR checklist (section 10.6).
+- One short-lived branch per step, named by type and epic, e.g. `feature/e00-first-config-value` or `docs/e00-skeleton-evidence`.
+- Every change reaches `main` through a pull request reviewed against the blueprint's PR checklist (section 10.6). Nothing is pushed directly to `main`.
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`.
 - Working principle for every feature: **Learn → Explain → Design → Implement → Test → Review → Document.**
 

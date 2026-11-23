@@ -2,8 +2,9 @@
 
 | Field | Value |
 |-------|-------|
-| Status | Accepted (provisional — exact versions pending verification) |
-| Date | 2026-11-17 |
+| Status | **Accepted** |
+| Date proposed | 2026-11-17 |
+| Date accepted | 2026-11-23 |
 | Deciders | Samarth (project owner) |
 | Supersedes | Version statements in the blueprint ("Baseline technology choices" and section 11.1) |
 
@@ -27,39 +28,49 @@ This is a long-running learning project (many months). The goal is to learn the 
 
 ## Decision
 
-**Option 2: use the newest stable version of each component**, provisionally.
+**Use the newest stable Spring Boot release with Java 21 (LTS).**
 
-Exact versions will be recorded in the table below when the project is generated (Assignment 3) and verified for compatibility. If verification shows a problem (for example, the newest Java release is not LTS or is not supported by the chosen Spring Boot line), this ADR will be revised rather than silently worked around.
+Spring Boot follows option 2 (newest GA release at project generation). Java stays on 21, an LTS release supported by Spring Boot 4.1.2. Moving to Java 25 (the newest LTS) is a candidate future change — see "Review triggers".
 
 PostgreSQL runs in Docker Compose for local development; the project does not depend on a locally installed PostgreSQL server.
 
-## Version record (fill in at project generation)
+## Version record
 
 | Component | Version | Source checked | Compatible with the rest? |
 |-----------|---------|----------------|---------------------------|
-| JDK (vendor + version) | _TBD_ | | |
-| Spring Boot | _TBD_ | | |
-| Spring Security | Managed by Spring Boot BOM | — | — |
-| Maven (via Wrapper) | _TBD_ | | |
-| PostgreSQL (Docker image tag) | _TBD_ | | |
-| Flyway | Managed by Spring Boot BOM | — | _TBD_ |
-| Testcontainers | _TBD_ | | |
+| JDK | 21 — vendor: _(fill in, from `java -version`)_ | `java -version`; startup log line "Starting … using Java 21" | ✅ Offered by Spring Initializr for Spring Boot 4.1.2; build and context-load test pass |
+| Spring Boot | 4.1.2 | `pom.xml` (`spring-boot-starter-parent`); start.spring.io | ✅ GA release |
+| Spring Security | Managed by Spring Boot BOM (not yet added) | — | Added in Phase 1 |
+| Maven (via Wrapper) | _(fill in, from `.\mvnw.cmd -v`)_ | `.mvn/wrapper/maven-wrapper.properties` | ✅ Builds the project successfully |
+| PostgreSQL (Docker image tag) | To be decided | — | Recorded when Docker Compose is added (Assignment 4) |
+| Flyway | Managed by Spring Boot BOM (not yet added) | — | Checked against the PostgreSQL version in Assignment 4 |
+| Testcontainers | To be decided | — | Recorded when added (Phase 2) |
+
+**Compatibility evidence (2026-11-23):** `.\mvnw.cmd clean verify` → `Tests run: 1, Failures: 0, Errors: 0, Skipped: 0`, `BUILD SUCCESS`, on Java 21 with Spring Boot 4.1.2.
 
 ## Consequences
 
 **Positive**
 
-- The project is built on the current generation of the stack.
-- Longest available support window before the first planned upgrade.
+- The project is built on the current Spring Boot generation.
+- Java 21 is an LTS release with a long support window.
 
 **Negative / risks**
 
-- Blueprint examples written for Spring Boot 3.x may not apply unchanged. Mitigation: official documentation is the primary source; check the version every tutorial targets before following it.
-- The newest Java release may not be an LTS release, which would mean a short support window. Mitigation: check during verification; revise this ADR if needed.
+- Blueprint examples written for Spring Boot 3.x may not apply unchanged (for example, starter names and some APIs differ in 4.x). Mitigation: official documentation is the primary source; check the version every tutorial targets before following it.
+- Java 21 is no longer the newest LTS. Mitigation: a deliberate review of Java 25 (see below).
 - A brand-new PostgreSQL major version may not yet be supported by Flyway, the JDBC driver or Testcontainers. Mitigation: verify before fixing the Docker image tag.
 
 ## Review triggers
 
-- Project generation in Assignment 3 (fill in the version record and verify compatibility).
+- **Java 25 upgrade:** to be evaluated deliberately (support timeline, Spring Boot support, tooling) and recorded here before any change. An automated upgrade tool briefly created an upgrade branch on 2026-11-23; it was deleted without changes, because version changes must go through this ADR.
+- Adding PostgreSQL, Flyway or Testcontainers: fill in their rows.
 - Any component in the table approaching end of support.
 - Any compatibility problem discovered during development.
+
+## Revision history
+
+| Date | Change |
+|------|--------|
+| 2026-11-17 | Proposed: newest stable versions, provisionally. |
+| 2026-11-23 | Accepted: Spring Boot 4.1.2 with Java 21; version record filled in; Java 25 noted as a review trigger. |
